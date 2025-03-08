@@ -8,13 +8,11 @@ from django.db.models import Count, When, Case
 
 from notifications.choices import NotificationsStatus
 
-from dirtyfields import DirtyFieldsMixin
-
 
 User = get_user_model()
 
 
-class BaseModel(DirtyFieldsMixin, models.Model):
+class BaseModel(models.Model):
     """Base class for all other models."""
 
     # Unique identifier.
