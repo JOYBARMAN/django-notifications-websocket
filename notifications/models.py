@@ -1,11 +1,11 @@
 import uuid
 
-from django.db import transaction
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.query import QuerySet
 from django.db.models import Count, When, Case
 
+from notifications.managers import SignalTriggeringManager
 from notifications.choices import NotificationsStatus
 
 
@@ -85,6 +85,9 @@ class Notification(BaseModel):
         verbose_name = "Notification"
         verbose_name_plural = "Notifications"
 
+    # Custom manager for the Notification model.
+    objects = SignalTriggeringManager()
+
     def __str__(self):
         """
         Return a string representation of the notification.
@@ -98,7 +101,7 @@ class Notification(BaseModel):
         """
         Perform this action before saving the model instance.
         """
-        from notifications.utils import validate_notification
+        from notifications.utils.notifications import validate_notification
 
         super().clean()
         validate_notification(notification_data=self.notification, use_for_model=True)
@@ -182,7 +185,7 @@ class Notification(BaseModel):
         self, notification_data: dict, users: QuerySet, requested_user, **kwargs
     ):
         """Create notifications for multiple users efficiently."""
-        from notifications.utils import validate_notification
+        from notifications.utils.notifications import validate_notification
 
         # Validate notification data
         validate_notification(notification_data=notification_data)
@@ -201,8 +204,8 @@ class Notification(BaseModel):
             )
             for user in users
         ]
-        for notification in notification_instance:
-            notification.save()
+        # Use bulk_create to insert all instances in a single query
+        Notification.objects.bulk_create(notification_instance)
 
         return
 

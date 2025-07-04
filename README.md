@@ -163,16 +163,23 @@ urlpatterns = [
 
 ## HTTP API Endpoints
 
-### Notifications API
-
-| **Endpoint**                       | **Method** | **Description**                                                                                              | **Headers**                 | **Query Parameters**                                                                                      | **Payload Example**                                                                                                           |
-|------------------------------------|------------|--------------------------------------------------------------------------------------------------------------|-----------------------------|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `/api/v1/me/notifications`        | `GET`      | Retrieve authenticated user’s notifications. Supports filtering and pagination.                              | `Authorization: Bearer <JWT_TOKEN>` | - `page=<num>`: For pagination<br> - `is_read=<true/false>`: Filter by read status                          | None                                                                                                                         |
-| `/api/v1/me/notifications`        | `PATCH`    | Perform an action to update notifications.                                                                   | `Authorization: Bearer <JWT_TOKEN>` | None                                                                                                     | - `{"action_choice":"MARK_AS_READ", "notification_uids": ["uid1", "uid2"]}`<br>- `{"action_choice":"REMOVED_ALL"}`             |
+Sure! Here's your **Notifications API** section in compact table format as requested:
 
 ---
 
-### Action Choices for PATCH Endpoint
+## Notifications API
+
+| **Endpoint**                                  | **Method** | **Description**                                                                                          | **Headers**                         | **Query Parameters**                   | **Payload Example**                                                                                            |
+| --------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `/api/v1/me/notifications`                    | `GET`      | Retrieve authenticated user’s notifications. Supports filtering and pagination.                          | `Authorization: Bearer <JWT_TOKEN>` | `page=<num>`<br>`is_read=<true/false>` | None                                                                                                           |
+| `/api/v1/me/notifications`                    | `PATCH`    | Perform an action to update multiple notifications.                                                      | `Authorization: Bearer <JWT_TOKEN>` | None                                   | `{"action_choice":"MARK_AS_READ", "notification_uids": ["uid1", "uid2"]}`<br>`{"action_choice":"REMOVED_ALL"}` |
+| `/api/v1/me/notifications/<notification_uid>` | `GET`      | Retrieve detailed information of a specific notification. Automatically marks it as read if not already. | `Authorization: Bearer <JWT_TOKEN>` | None                                   | None                                                                                                           |
+| `/api/v1/me/notifications/<notification_uid>` | `PATCH`    | Update the status of a specific notification.                                                            | `Authorization: Bearer <JWT_TOKEN>` | None                                   | `{"status": "REMOVED"}`<br>`{"status": "DELETED"}`                                                             |
+
+---
+
+
+### Action Choices for Notification List PATCH Endpoint
 
 The following table explains the valid choices for `action_choice` and their required payloads:
 
@@ -270,138 +277,126 @@ This response format provides additional context for developers integrating with
   - **`updated_at`**: Timestamp of the last update to the notification.
 
 
+---
 
-### WebSocket API Documentation for Real-Time Notifications
+## WebSocket API Documentation for Real-Time Notifications
 
-#### **WebSocket Endpoint**
-**URL**: `ws://localhost:8000/ws/me/notifications`
-**Authentication**: Requires JWT token in the `Authorization` header.
+### **WebSocket Endpoint**
+
+* **URL**: `ws://localhost:8000/ws/me/notifications`
+* **Authentication**: Pass the **JWT token only**  using the `Sec-WebSocket-Protocol` header.
 
 ---
 
-#### **Connection Request**
+### **Connection Request**
 
-To connect to the WebSocket endpoint, the user must include a valid JWT token in the `Authorization` header. Upon a successful connection, the user will receive a real-time update of their notification counts.
+Use a WebSocket client (e.g. Postman, browser, frontend) and include the JWT token directly:
 
-**Headers Example:**
-```http
-Authorization: Bearer <JWT_TOKEN>
+```
+Sec-WebSocket-Protocol: <JWT_TOKEN>
 ```
 
 ---
 
-#### **Initial Response on Connection**
-Upon a successful connection, the server sends the following message with the current counts of notifications:
+### **Initial Response on Connection**
 
-**Example Response:**
+Upon a successful connection, the server sends a structured response containing notification data and pagination info.
+
+**Example Initial Response:**
+
 ```json
 {
-    "total_notifications": 497,
-    "read_notifications": 56,
-    "unread_notifications": 441
-}
-```
-
----
-
-#### **Real-Time Updates**
-Whenever a notification for the authenticated user is updated, the server sends a real-time message with the updated counts.
-
-**Example Update:**
-```json
-{
-    "total_notifications": 498,
-    "read_notifications": 56,
-    "unread_notifications": 442
-}
-```
-
----
-
-#### **Enhanced Notification Data (Optional)**
-If you want to receive the full list of notifications in real time, you need to enable the following setting in your project:
-
-**Django Setting:**
-```python
-ALLOWED_NOTIFICATION_DATA = True
-```
-
-When this setting is enabled, the WebSocket response includes the full notification details.
-
-**Example Response:**
-```json
-{
+  "results": {
     "total_notifications": 497,
     "read_notifications": 56,
     "unread_notifications": 441,
     "notifications": [
-        {
-            "id": 501,
-            "uid": "9d032eaa-860e-4587-98ac-358c8b49741d",
-            "user": {
-                "id": 1,
-                "first_name": "test",
-                "last_name": "user",
-                "email": "testuser@gmail.com"
-            },
-            "notification": {
-                "message": "New blog post by test user",
-                "model": "Blog",
-                "instance": {"id":1,"title":"New Blog","content":"Blog content"},
-                "method": "POST",
-                "changed_data": {}
-            },
-            "is_read": true,
-            "custom_info": null,
-            "created_by": {
-                "id": 2,
-                "first_name": "Admin",
-                "last_name": "user",
-                "email": "admin@gmail.com"
-            },
-            "status": "ACTIVE",
-            "created_at": "2024-12-14T07:32:10.269207Z",
-            "updated_at": "2024-12-14T07:35:39.155092Z"
+      {
+        "id": 501,
+        "uid": "9d032eaa-860e-4587-98ac-358c8b49741d",
+        "user": {
+          "id": 1,
+          "first_name": "test",
+          "last_name": "user",
+          "email": "testuser@gmail.com"
         },
-        {
-            "id": 500,
-            "uid": "78a72af3-00ab-4135-87fa-f8d9c869c727",
-            "user": {
-                "id": 1,
-                "first_name": "",
-                "last_name": "",
-                "email": ""
-            },
-            "notification": {
-                "message": "hi",
-                "model": "None",
-                "instance": {},
-                "method": "DELETE",
-                "changed_data": {}
-            },
-            "is_read": true,
-            "custom_info": null,
-            "created_by": {
-                "id": 1,
-                "first_name": "",
-                "last_name": "",
-                "email": ""
-            },
-            "status": "ACTIVE",
-            "created_at": "2024-12-14T07:32:09.983534Z",
-            "updated_at": "2024-12-14T07:32:09.983569Z"
-        }
+        "notification": {
+          "message": "New blog post by test user",
+          "model": "Blog",
+          "instance": {
+            "id": 1,
+            "title": "New Blog",
+            "content": "Blog content"
+          },
+          "method": "POST",
+          "changed_data": {}
+        },
+        "is_read": true,
+        "custom_info": null,
+        "created_by": {
+          "id": 2,
+          "first_name": "Admin",
+          "last_name": "user",
+          "email": "admin@gmail.com"
+        },
+        "status": "ACTIVE",
+        "created_at": "2024-12-14T07:32:10.269207Z",
+        "updated_at": "2024-12-14T07:35:39.155092Z"
+      }
+      // ... more notifications
     ]
+  },
+  "pagination": {
+    "page": 1,
+    "page_size": 25,
+    "total_pages": 20,
+    "total_items": 497
+  }
 }
 ```
 
 ---
 
-#### **Recommendation**
-Although enabling `ALLOWED_NOTIFICATION_DATA` provides detailed notification information via WebSocket, **it is not recommended** to use it for receiving all notifications. The preferred method for retrieving detailed notification data is via the **HTTP API endpoint**:
-`GET http://localhost:8000/api/v1/me/notifications/`.
+### **Real-Time Updates**
 
-Using the WebSocket for full notification data might increase server load and introduce performance overhead, especially for a large number of notifications.
+Any changes to notifications (e.g., creation, read status update) are pushed as a real-time message using the same structure:
+
+* `results`: notification counts and list
+* `pagination`: current pagination context
+
+---
+
+### **Client-Side Interaction for Pagination and Filtering**
+
+To request specific data (e.g., next page or filtered list), send a JSON message through the WebSocket:
+
+#### **Pagination Request**
+
+```json
+{
+  "page": 2
+}
+```
+
+#### **Filter by Read Status**
+
+```json
+{
+  "is_read": true
+}
+```
+
+#### **Combined Example**
+
+```json
+{
+  "page": 2,
+  "is_read": false
+}
+```
+
+The server will respond with the updated `results` and `pagination` blocks accordingly.
+
 
 ---
 
@@ -589,4 +584,5 @@ class BlogSerializer(serializers.ModelSerializer):
 
 #### **Recommendations**
 - Use the `NotificationService` sparingly in serializers or views to avoid overloading the system with notifications.
-- For better scalability, consider triggering notifications in background tasks using **Celery** or a similar tool.
+
+
