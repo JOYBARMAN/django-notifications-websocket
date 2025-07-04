@@ -585,4 +585,9 @@ class BlogSerializer(serializers.ModelSerializer):
 #### **Recommendations**
 - Use the `NotificationService` sparingly in serializers or views to avoid overloading the system with notifications.
 
+## Frontend Implementation (Demo)
+[GitHub Repository](https://github.com/JOYBARMAN/notification_frontend)
+
+---
+
 
