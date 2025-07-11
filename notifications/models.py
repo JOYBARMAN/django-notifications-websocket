@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.query import QuerySet
@@ -10,6 +11,9 @@ from notifications.choices import NotificationsStatus
 
 
 User = get_user_model()
+
+# Import notification settings from Django settings
+NOTIFICATIONS_SETTINGS = getattr(settings, "NOTIFICATIONS", {})
 
 
 class BaseModel(models.Model):
@@ -132,12 +136,32 @@ class Notification(BaseModel):
             raise ValueError("User is missing.")
 
         if NotificationSettings().is_user_enable_notification(user=user):
+            # Select related fields if specified in settings
+            settings_select_related_fields = NOTIFICATIONS_SETTINGS.get(
+                "NOTIFICATION_USER_SELECT_RELATED_FIELDS"
+            )
+            if settings_select_related_fields:
+                select_related_fields = []
+                for field in settings_select_related_fields:
+                    select_related_fields.append(f"user__{field}")
+                    select_related_fields.append(f"created_by__{field}")
+            else:
+                select_related_fields = ["user", "created_by"]
+
+            # Prefetch related fields if specified in settings
+            prefetch_related_fields = NOTIFICATIONS_SETTINGS.get(
+                "NOTIFICATION_USER_PREFETCH_RELATED_FIELDS", []
+            )
+
+            # Get the user's notifications
             user_notifications = (
                 Notification()
                 .get_active_notifications()
                 .filter(user=user)
-                .select_related("user", "created_by")
+                .select_related(*select_related_fields)
+                .prefetch_related(*prefetch_related_fields)
             )
+
             # Aggregate the counts
             notification_counts = user_notifications.aggregate(
                 total_notifications=Count("id"),

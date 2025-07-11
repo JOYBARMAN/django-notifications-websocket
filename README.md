@@ -85,25 +85,64 @@ pip install djangorestframework djangorestframework-simplejwt
    }
    ```
 
-5. **Set up User Serializer**
+5. **Set up Notification Settings**
 
-    To configure the user serializer for the notification system, you need to specify it in your settings file. You have two options for the `NOTIFICATION_USER_SERIALIZER`:
+To configure how your notification system handles user data, you need to define your user serializer and any related fields in your Django **`settings.py`** file.
 
-Define a custom user serializer specific to your project:
+Add a `NOTIFICATIONS` configuration dictionary with the following options:
 
-   ```python
-   # Use your custom user serializer by specifying its full import path
-   NOTIFICATION_USER_SERIALIZER = 'your_app.serializers.UserSerializerName'
-   ```
+```python
+NOTIFICATIONS = {
+    # ✅ The fully qualified import path to your user serializer
+    "NOTIFICATION_USER_SERIALIZER": "Your_App.UserSerializerPath",
+    # e.g ("NOTIFICATION_USER_SERIALIZER": "blog.serializers.UserSerializer")
 
-Use the package's built-in custom user serializer:
+    # ✅ A list of fields to include in `.select_related()` when querying users.
+    #   Use this to optimize queries for related fields (e.g., a profile OneToOne field).
+    "NOTIFICATION_USER_SELECT_RELATED_FIELDS": [],
+    # e.g ("NOTIFICATION_USER_SELECT_RELATED_FIELDS":["profile","address__country","address__city"])
 
-   ```python
-   # Use the default custom user serializer provided by the notifications package
-   NOTIFICATION_USER_SERIALIZER = 'notifications.serializers.CustomUserSerializer'
-   ```
+    # ✅ A list of fields to include in `.prefetch_related()` when querying users.
+    #   Use this for related ManyToMany or reverse ForeignKey relationships.
+    "NOTIFICATION_USER_PREFETCH_RELATED_FIELDS": [],
+    # e.g ("NOTIFICATION_USER_PREFETCH_RELATED_FIELDS":["like"])
+}
+```
 
-This configuration ensures that the system knows which serializer to use when handling user data in notifications.
+---
+
+### 🔑 **How it works**
+
+* `NOTIFICATION_USER_SERIALIZER`
+  Defines which serializer should be used for the `user` field in your notifications.
+
+  * Use **your own custom serializer**:
+
+    ```python
+    "NOTIFICATION_USER_SERIALIZER": "your_app.serializers.YourCustomUserSerializer"
+    ```
+  * Or use the default serializer provided by the notifications package (if available):
+
+    ```python
+    "NOTIFICATION_USER_SERIALIZER": "notifications.serializers.CustomUserSerializer"
+    ```
+
+* `NOTIFICATION_USER_SELECT_RELATED_FIELDS`
+  Lists the related fields to load efficiently with `.select_related()`.
+  For example, if your user has a `profile` (OneToOne), include `"profile"`.
+
+* `NOTIFICATION_USER_PREFETCH_RELATED_FIELDS`
+  Lists the related fields to load with `.prefetch_related()`.
+  Use this for any ManyToMany or reverse ForeignKey relationships you want to prefetch.
+
+---
+
+✅ This setup makes your notification package **flexible** and **efficient**, so you can customize user serialization and database performance to match your project’s needs.
+
+---
+
+Let me know if you’d like me to help you write an example **`UserSerializer`** or the **queryset logic** that uses `select_related` and `prefetch_related`!
+
 
 ---
 
@@ -133,6 +172,21 @@ application = ProtocolTypeRouter(
     }
 )
 ```
+
+## Notes
+- If you already using Websocket in your project's just import `websocket_urlpatterns` from `notifications.routing` and add with your existing `websocket_urlpatterns`
+
+- Example:
+
+```python
+
+from notifications.routing import websocket_urlpatterns as notification_websocket_urlpatterns
+
+websocket_urlpatterns = [
+
+"""Your All Existing WS Url"""
+
+] + notification_websocket_urlpatterns
 
 ---
 
@@ -411,7 +465,7 @@ This guide explains how to use the **NotificationService** provided by the `noti
 #### **Import NotificationService**
 Before using the service, import it in the required module:
 ```python
-from notifications.service import NotificationService
+from notifications.services import NotificationService
 ```
 
 ---
@@ -459,6 +513,7 @@ service = NotificationService(
     instance=blog_instance,
     method="POST",
     user_list=User.objects.filter(is_active=True),  # Notify all active users
+    serialzer=BlogSerializer,
 )
 
 result = service.create_notification()
@@ -529,7 +584,7 @@ class BlogSerializer(serializers.ModelSerializer):
             instance=blog,  # The model instance associated with the notification
             method="POST",  # HTTP method triggering the notification
             user_list=user_list,
-            serializer=BlogSerializer  # Optional: Pass a serializer to include instance data in the notification
+            serializer=BlogSerializer  # Pass a serializer to include instance data in the notification
         )
         notification.create_notification()
 
@@ -571,7 +626,7 @@ class BlogSerializer(serializers.ModelSerializer):
 | `instance`            | The model instance associated with the notification.                                            |
 | `method`              | The HTTP method or action triggering the notification. Options: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `UNDEFINED`. |
 | `user_list`           | A list of users who should receive the notification.                                            |
-| `serializer` (Optional) | An optional serializer instance to serialize the model data for the notification.             |
+| `serializer`          | Serializer instance to serialize the model data for the notification.             |
 
 ---
 
@@ -589,5 +644,3 @@ class BlogSerializer(serializers.ModelSerializer):
 [GitHub Repository](https://github.com/JOYBARMAN/notification_frontend)
 
 ---
-
-

@@ -7,4 +7,3 @@ django_notifications_websocket.egg-info/
 demo/
 build/
 dist/
-dump.rdb

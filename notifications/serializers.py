@@ -1,4 +1,4 @@
-"""Serializer for notification related """
+"""Serializer for notification related"""
 
 from django.conf import settings
 from django.utils.module_loading import import_string
@@ -9,14 +9,21 @@ from rest_framework import serializers
 from notifications.models import Notification
 from notifications.choices import NotificationsStatus, NotificationsActionChoices
 
+NOTIFICATIONS_SETTINGS = getattr(settings, "NOTIFICATIONS", {})
 User = get_user_model()
+
 
 def get_user_serializer():
     # Get the serializer path from settings, fallback to PrimaryKeyRelatedField
-    user_serializer_class = import_string(getattr(settings, 'NOTIFICATION_USER_SERIALIZER', 'rest_framework.serializers.PrimaryKeyRelatedField'))
+    user_serializer_class = import_string(
+        NOTIFICATIONS_SETTINGS.get(
+            "NOTIFICATION_USER_SERIALIZER",
+            "rest_framework.serializers.PrimaryKeyRelatedField",
+        )
+    )
 
     # Check if it's a proper serializer class (i.e., has Meta), else fallback to PrimaryKeyRelatedField
-    if not hasattr(user_serializer_class, 'Meta'):
+    if not hasattr(user_serializer_class, "Meta"):
         user_serializer_class = serializers.PrimaryKeyRelatedField
 
     return user_serializer_class
@@ -33,6 +40,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
         ]
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     """Serializer for notification"""
