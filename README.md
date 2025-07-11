@@ -137,12 +137,23 @@ NOTIFICATIONS = {
 
 ---
 
-✅ This setup makes your notification package **flexible** and **efficient**, so you can customize user serialization and database performance to match your project’s needs.
+6. **Run Command**
 
----
+For Migrate Run:
 
-Let me know if you’d like me to help you write an example **`UserSerializer`** or the **queryset logic** that uses `select_related` and `prefetch_related`!
+```python
 
+python manage.py migrate
+
+```
+
+Now Initialize The Notification Settings For All Users Run:
+
+```python
+
+python manage.py init_notification_settings
+
+```
 
 ---
 
